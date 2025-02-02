@@ -17,7 +17,8 @@
 
 typedef enum e_fractal {
     MANDELBROT,
-    JULIA
+    JULIA,
+    BURNING_SHIP
 } t_fractal;
 
 typedef struct s_fractol {
@@ -48,7 +49,7 @@ int redraw(t_fractol* fractol) {
         for (x = 0; x < WIDTH; x++) {
             p_re = map(x, 0, WIDTH, MIN_X, MAX_X) * fractol->scale + fractol->offset_x;
             p_im = map(y, 0, HEIGHT, MIN_Y, MAX_Y) * fractol->scale + fractol->offset_y;
-            if (fractol->fractal == MANDELBROT) {
+            if (fractol->fractal == MANDELBROT || fractol->fractal == BURNING_SHIP) {
                 c_re = p_re;
                 c_im = p_im;
                 z_re = 0;
@@ -63,7 +64,11 @@ int redraw(t_fractol* fractol) {
             z_im2 = z_im * z_im;
             color = 0;
             while (z_re2 + z_im2 < 4 && color < max_iter) {
-                z_im = 2 * z_re * z_im + c_im;
+                if (fractol->fractal == MANDELBROT || fractol->fractal == JULIA) {
+                    z_im = 2 * z_re * z_im + c_im;
+                } else if (fractol->fractal == BURNING_SHIP) {
+                    z_im = 2 * fabs(z_re) * fabs(z_im) + c_im;
+                }
                 z_re = z_re2 - z_im2 + c_re;
                 z_re2 = z_re * z_re;
                 z_im2 = z_im * z_im;
@@ -104,6 +109,8 @@ void parse_args(int argc, char **argv, t_fractol *fractol) {
             fractol->fractal = MANDELBROT;
         } else if (strcmp(argv[1], "julia") == 0) {
             fractol->fractal = JULIA;
+        } else if (strcmp(argv[1], "burning_ship") == 0) {
+            fractol->fractal = BURNING_SHIP;
         } else {
             printf("Usage: %s [mandelbrot|julia]\n", argv[0]);
             exit(1);
