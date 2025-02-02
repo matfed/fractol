@@ -1,8 +1,7 @@
 #include <math.h>
-#include <stdio.h>
 #include <X11/X.h>
+#include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
 #include <mlx.h>
 
 #define WIDTH 800
@@ -32,6 +31,8 @@ typedef struct s_fractol {
     double scale;
     double offset_x;
     double offset_y;
+    double c_re;
+    double c_im;
     t_fractal fractal;
 } t_fractol;
 
@@ -55,8 +56,8 @@ int redraw(t_fractol* fractol) {
                 z_re = 0;
                 z_im = 0;
             } else if (fractol->fractal == JULIA) {
-                c_re = -0.75;
-                c_im = 0.19;
+                c_re = fractol->c_re;
+                c_im = fractol->c_im;
                 z_re = p_re;
                 z_im = p_im;
             }
@@ -103,20 +104,71 @@ int mouse_hook(int button, int x, int y, t_fractol *fractol) {
     return 0;
 }
 
+int strcmp(const char *s1, const char *s2) {
+    while (*s1 && *s2 && *s1 == *s2) {
+        s1++;
+        s2++;
+    }
+    return *s1 - *s2;
+}
+
+void print(const char *s) {
+    while (*s) {
+        write(1, s, 1);
+        s++;
+    }
+}
+
+double atod(const char *s) {
+    double result = 0;
+    int sign = 1;
+    if (*s == '-') {
+        sign = -1;
+        s++;
+    }
+    while (*s >= '0' && *s <= '9') {
+        result = result * 10 + *s - '0';
+        s++;
+    }
+    if (*s == '.') {
+        s++;
+        double factor = 0.1;
+        while (*s >= '0' && *s <= '9') {
+            result += (*s - '0') * factor;
+            factor *= 0.1;
+            s++;
+        }
+    }
+    return result * sign;
+}
+
 void parse_args(int argc, char **argv, t_fractol *fractol) {
     if (argc == 2) {
         if (strcmp(argv[1], "mandelbrot") == 0) {
             fractol->fractal = MANDELBROT;
-        } else if (strcmp(argv[1], "julia") == 0) {
-            fractol->fractal = JULIA;
         } else if (strcmp(argv[1], "burning_ship") == 0) {
             fractol->fractal = BURNING_SHIP;
         } else {
-            printf("Usage: %s [mandelbrot|julia]\n", argv[0]);
+            print("Usage: ");
+            print(argv[0]);
+            print(" [mandelbrot|julia|burning_ship]\n");
+            exit(1);
+        }
+    } else if (argc == 4) {
+        if (strcmp(argv[1], "julia") == 0) {
+            fractol->fractal = JULIA;
+            fractol->c_re = atod(argv[2]);
+            fractol->c_im = atod(argv[3]);
+        } else {
+            print("Usage: ");
+            print(argv[0]);
+            print(" julia <c_re> <c_im>\n");
             exit(1);
         }
     } else {
-        printf("Usage: %s [mandelbrot|julia]\n", argv[0]);
+        print("Usage: ");
+        print(argv[0]);
+        print(" [mandelbrot|julia|burning_ship]\n");
         exit(1);
     }
 }
